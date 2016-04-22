@@ -7,20 +7,21 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Diagnostics;
 using System.Threading;
+using System.Runtime.InteropServices;
 
 namespace Wps2Pdf
 {
     public class Converter
     {
-        private Word.Application wordApp = null;
-        private Excel.Application excelApp = null;
-        private PowerPoint.Application pptApp = null;
+        private static Word.Application wordApp = null;
+        private static Excel.Application excelApp = null;
+        private static PowerPoint.Application pptApp = null;
 
-        private Regex wpsRegex = new Regex("\\.(docx?|dotx?|do[ct]m|wps|wpt|rtf|txt|xml|mht(ml)?|html?)$", RegexOptions.IgnoreCase);
-        private Regex wppRegex = new Regex("\\.(dp[st]|pp[st][xm]?|pot[xm])$", RegexOptions.IgnoreCase);
-        private Regex etRegex = new Regex("\\.(ett?|xl[st]|xls[xm]|xlt[xm]|csv)$", RegexOptions.IgnoreCase);
-        private Regex pdfRegex = new Regex("\\.pdf$", RegexOptions.IgnoreCase);
-        private Regex replaceRegex = new Regex("\\.([a-z]+)$", RegexOptions.IgnoreCase);
+        private static Regex wpsRegex = new Regex("\\.(docx?|dotx?|do[ct]m|wps|wpt|rtf|txt|xml|mht(ml)?|html?)$", RegexOptions.IgnoreCase);
+        private static Regex wppRegex = new Regex("\\.(dp[st]|pp[st][xm]?|pot[xm])$", RegexOptions.IgnoreCase);
+        private static Regex etRegex = new Regex("\\.(ett?|xl[st]|xls[xm]|xlt[xm]|csv)$", RegexOptions.IgnoreCase);
+        private static Regex pdfRegex = new Regex("\\.pdf$", RegexOptions.IgnoreCase);
+        private static Regex replaceRegex = new Regex("\\.([a-z]+)$", RegexOptions.IgnoreCase);
 
         private Stopwatch sw = new Stopwatch();
 
@@ -30,6 +31,25 @@ namespace Wps2Pdf
         public static Semaphore sem = new Semaphore(0, maxQueueLength);
 
         public bool isRun = true;
+
+        public static void init()
+        {
+            wordApp = new Word.Application();
+            wordApp.Visible = Environment.UserInteractive;
+            wordApp.AutoCorrect.DisplayAutoCorrectOptions = false;
+
+            excelApp = new Excel.Application();
+            excelApp.Visible = Environment.UserInteractive;
+            excelApp.AutoCorrect.DisplayAutoCorrectOptions = false;
+
+            pptApp = new PowerPoint.Application();
+            if (Environment.UserInteractive)
+            {
+                pptApp.Visible = PowerPoint.MsoTriState.msoTrue;
+            }
+            pptApp.AutoCorrect.DisplayAutoCorrectOptions = false;
+            pptApp.AutoCorrect.DisplayAutoLayoutOptions = false;
+        }
 
         public void run()
         {
@@ -82,13 +102,6 @@ namespace Wps2Pdf
             {
                 if (wpsRegex.IsMatch(filePath))
                 {
-                    if (wordApp == null)
-                    {
-                        wordApp = new Word.Application();
-                        //wordApp.Visible = true;
-                        wordApp.AutoCorrect.DisplayAutoCorrectOptions = false;
-                    }
-
                     Word.Document word = wordApp.Documents.Open(filePath);
                     word.ExportAsFixedFormat(pdfPath, Word.WdExportFormat.wdExportFormatPDF);
                     word.Close();
@@ -96,14 +109,6 @@ namespace Wps2Pdf
                 }
                 else if (wppRegex.IsMatch(filePath))
                 {
-                    if (pptApp == null)
-                    {
-                        pptApp = new PowerPoint.Application();
-                        //pptApp.Visible = PowerPoint.MsoTriState.msoTrue;
-                        pptApp.AutoCorrect.DisplayAutoCorrectOptions = false;
-                        pptApp.AutoCorrect.DisplayAutoLayoutOptions = false;
-                    }
-
                     PowerPoint.Presentation ppt = pptApp.Presentations.Open(filePath, PowerPoint.MsoTriState.msoTrue, PowerPoint.MsoTriState.msoFalse, PowerPoint.MsoTriState.msoFalse);
                     ppt.ExportAsFixedFormat(pdfPath, PowerPoint.PpFixedFormatType.ppFixedFormatTypePDF);
                     ppt.Close();
@@ -111,13 +116,6 @@ namespace Wps2Pdf
                 }
                 else if (etRegex.IsMatch(filePath))
                 {
-                    if (excelApp == null)
-                    {
-                        excelApp = new Excel.Application();
-                        //excelApp.Visible = true;
-                        excelApp.AutoCorrect.DisplayAutoCorrectOptions = false;
-                    }
-
                     Excel.Workbook excel = excelApp.Workbooks.Open(filePath);
                     excel.ExportAsFixedFormat(Excel.XlFixedFormatType.xlTypePDF, pdfPath);
                     excel.Close();
@@ -155,48 +153,52 @@ namespace Wps2Pdf
             }
         }
 
-        ~Converter()
+        public static void destory()
         {
             Console.Write("退出线程(" + Thread.CurrentThread.ManagedThreadId + ") ");
 
-            if (wordApp != null)
+            try
             {
-                try
-                {
-                    wordApp.Quit();
-                    Console.Write("Word ");
-                }
-                finally
-                {
-                    wordApp = null;
-                }
+                wordApp.Quit();
+                Console.Write("Word ");
+            }
+            catch (COMException e)
+            {
+                Console.Write("PowerPoint({0}): {1}", e.ErrorCode, e.Message);
+            }
+            finally
+            {
+                wordApp = null;
             }
 
-            if (pptApp != null)
+            try
             {
-                try
-                {
-                    pptApp.Quit();
-                    Console.Write("PowerPoint ");
-                }
-                finally
-                {
-                    pptApp = null;
-                }
+                pptApp.Quit();
+                Console.Write("PowerPoint ");
+            }
+            catch (COMException e)
+            {
+                Console.Write("PowerPoint({0}): {1}", e.ErrorCode, e.Message);
+            }
+            finally
+            {
+                pptApp = null;
             }
 
-            if (excelApp != null)
+            try
             {
-                try
-                {
-                    excelApp.Quit();
-                    Console.Write("Excel ");
-                }
-                finally
-                {
-                    excelApp = null;
-                }
+                excelApp.Quit();
+                Console.Write("Excel ");
             }
+            catch (COMException e)
+            {
+                Console.Write("PowerPoint({0}): {1}", e.ErrorCode, e.Message);
+            }
+            finally
+            {
+                excelApp = null;
+            }
+
             Console.WriteLine();
         }
     }

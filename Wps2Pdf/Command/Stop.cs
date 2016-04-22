@@ -12,7 +12,14 @@ namespace Wps2Pdf.Command
     {
         public override void ExecuteCommand(AppSession session, StringRequestInfo requestInfo)
         {
-            Deamon.sem.Release();
+            if (Environment.UserInteractive)
+            {
+                Deamon.sem.Release();
+            }
+            else
+            {
+                Wps2Pdf.GetService().Stop();
+            }
         }
     }
 }
