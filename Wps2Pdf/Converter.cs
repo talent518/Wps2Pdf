@@ -25,10 +25,12 @@ namespace Wps2Pdf
         private Stopwatch sw = new Stopwatch();
 
         public static Queue<QueueItem> queue = new Queue<QueueItem>();
-        public static Semaphore sem = new Semaphore(65535, 65535);
+
+        public const int maxQueueLength = 65535;
+        public static Semaphore sem = new Semaphore(0, maxQueueLength);
 
         public bool isRun = true;
-        
+
         public void run()
         {
             QueueItem item = null;
@@ -39,10 +41,13 @@ namespace Wps2Pdf
                     if (queue.Count > 0)
                     {
                         item = queue.Dequeue();
-
-                        item.session.Send(convert(item.filePath) ? "Success" : "Failure");
-                        item = null;
                     }
+                }
+
+                if (item != null)
+                {
+                    item.session.Send(convert(item.filePath) ? "Success" : "Failure");
+                    item = null;
                 }
 
                 sem.WaitOne();
@@ -148,6 +153,51 @@ namespace Wps2Pdf
 
                 return false;
             }
+        }
+
+        ~Converter()
+        {
+            Console.Write("退出线程(" + Thread.CurrentThread.ManagedThreadId + ") ");
+
+            if (wordApp != null)
+            {
+                try
+                {
+                    wordApp.Quit();
+                    Console.Write("Word ");
+                }
+                finally
+                {
+                    wordApp = null;
+                }
+            }
+
+            if (pptApp != null)
+            {
+                try
+                {
+                    pptApp.Quit();
+                    Console.Write("PowerPoint ");
+                }
+                finally
+                {
+                    pptApp = null;
+                }
+            }
+
+            if (excelApp != null)
+            {
+                try
+                {
+                    excelApp.Quit();
+                    Console.Write("Excel ");
+                }
+                finally
+                {
+                    excelApp = null;
+                }
+            }
+            Console.WriteLine();
         }
     }
 }

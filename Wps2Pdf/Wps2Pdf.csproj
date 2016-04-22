@@ -91,6 +91,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Command\Stop.cs" />
     <Compile Include="Command\Ping.cs" />
     <Compile Include="Command\Convert.cs" />
     <Compile Include="Command\Close.cs" />

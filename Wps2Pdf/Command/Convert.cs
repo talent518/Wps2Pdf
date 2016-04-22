@@ -12,17 +12,24 @@ namespace Wps2Pdf.Command
     {
         public override void ExecuteCommand(AppSession session, StringRequestInfo requestInfo)
         {
-            QueueItem item = new QueueItem();
-            item.session = session;
-            item.filePath = requestInfo.Body;
-
-            lock(Converter.queue)
+            lock (Converter.queue)
             {
-                Converter.queue.Enqueue(item);
-            }
-            Converter.sem.Release();
+                if (Converter.queue.Count < Converter.maxQueueLength)
+                {
+                    QueueItem item = new QueueItem();
+                    item.session = session;
+                    item.filePath = requestInfo.Body;
 
-            session.Send("WaitConvert");
+                    Converter.queue.Enqueue(item);
+                    Converter.sem.Release();
+
+                    session.Send("WaitConvert");
+                }
+                else
+                {
+                    session.Send("QueueFulled");
+                }
+            }
         }
     }
 }
