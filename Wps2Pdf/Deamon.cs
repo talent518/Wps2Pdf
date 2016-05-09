@@ -1,5 +1,6 @@
 ﻿using SuperSocket.SocketBase;
 using SuperSocket.SocketBase.Config;
+using SuperSocket.SocketBase.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,6 +27,8 @@ namespace Wps2Pdf
 
         private static int i;
 
+        public static ILog Logger = null;
+
         public static bool Start(string[] args)
         {
             if (appServer != null) {
@@ -49,6 +52,8 @@ namespace Wps2Pdf
                 appServer.Logger.Error("Failed to start!");
                 return false;
             }
+
+            Logger = appServer.Logger;
 
             appServer.Logger.Info("Converter.init");
             Converter.init();
@@ -75,6 +80,8 @@ namespace Wps2Pdf
 
                 return false;
             }
+
+            Logger = null;
 
             //Stop the appServer
             appServer.Stop();

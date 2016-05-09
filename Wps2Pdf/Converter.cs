@@ -84,18 +84,16 @@ namespace Wps2Pdf
             sw.Reset();
             if (pdfRegex.IsMatch(filePath))
             {
-                Console.Write("文件 " + filePath + " 已是PDF格式。");
-                Console.WriteLine();
+                Deamon.Logger.Info("文件 " + filePath + " 已是PDF格式。");
                 return false;
             }
             else if (File.Exists(pdfPath))
             {
-                Console.Write("文件 " + filePath + " 的PDF格式文件已存在。");
-                Console.WriteLine();
+                Deamon.Logger.Info("文件 " + filePath + " 的PDF格式文件已存在。");
                 return true;
             }
 
-            Console.WriteLine("正在转换 " + filePath + " 到 " + pdfPath + " ...");
+            Deamon.Logger.Info("正在转换 " + filePath + " 到 " + pdfPath + " ...");
 
             sw.Start();
             try
@@ -123,48 +121,32 @@ namespace Wps2Pdf
                 }
                 else
                 {
-                    Console.WriteLine("不支持此格式");
-                    Console.WriteLine();
+                    Deamon.Logger.Info("文件 " + filePath + " 不支持此格式！");
                     return false;
                 }
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                Deamon.Logger.ErrorFormat("转换文件 {0} 遇到了错误：{1}", filePath, e.Message);
             }
 
             sw.Stop();
 
-            Console.WriteLine("运行时间 " + (sw.ElapsedMilliseconds / 1000.0) + "s");
+            Deamon.Logger.InfoFormat("转换文件 {0} 运行时间 {1}s {2}", filePath, sw.ElapsedMilliseconds / 1000.0, File.Exists(pdfPath) ? "转换为PDf成功。" : "转换为PDF失败。");
 
-            if (File.Exists(pdfPath))
-            {
-                Console.WriteLine("转换为PDf成功。");
-                Console.WriteLine();
-
-                return true;
-            }
-            else
-            {
-                Console.WriteLine("转换为PDF失败。");
-                Console.WriteLine();
-
-                return false;
-            }
+            return File.Exists(pdfPath);
         }
 
         public static void destory()
         {
-            Console.Write("退出线程(" + Thread.CurrentThread.ManagedThreadId + ") ");
-
             try
             {
                 wordApp.Quit();
-                Console.Write("Word ");
+                Deamon.Logger.Info("Word 已成功退出");
             }
             catch (COMException e)
             {
-                Console.Write("PowerPoint({0}): {1}", e.ErrorCode, e.Message);
+                Deamon.Logger.ErrorFormat("Word 退出时遇到错误({0}): {1}", e.ErrorCode, e.Message);
             }
             finally
             {
@@ -174,11 +156,11 @@ namespace Wps2Pdf
             try
             {
                 pptApp.Quit();
-                Console.Write("PowerPoint ");
+                Deamon.Logger.Info("PowerPoint 已成功退出");
             }
             catch (COMException e)
             {
-                Console.Write("PowerPoint({0}): {1}", e.ErrorCode, e.Message);
+                Deamon.Logger.ErrorFormat("PowerPoint 退出时遇到错误({0}): {1}", e.ErrorCode, e.Message);
             }
             finally
             {
@@ -188,18 +170,16 @@ namespace Wps2Pdf
             try
             {
                 excelApp.Quit();
-                Console.Write("Excel ");
+                Console.Write("Excel 已成功退出");
             }
             catch (COMException e)
             {
-                Console.Write("PowerPoint({0}): {1}", e.ErrorCode, e.Message);
+                Deamon.Logger.ErrorFormat("Excel 退出时遇到错误({0}): {1}", e.ErrorCode, e.Message);
             }
             finally
             {
                 excelApp = null;
             }
-
-            Console.WriteLine();
         }
     }
 }

@@ -69,11 +69,14 @@ if(!isset($_SERVER['argv'][2]) or !file_exists($_SERVER['argv'][2])) {
 	exit;
 }
 
+$filePath = realpath($_SERVER['argv'][2]);
+$fileName = basename($filePath);
+
 $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 
-socket_connect($socket, '127.0.0.1', 2012) or ErrMsg($socket, '连接错误');
+@socket_connect($socket, '127.0.0.1', 2012) or ErrMsg($socket, '连接错误');
 
-$command = 'Convert ' . realpath($_SERVER['argv'][2]) . PHP_EOL;
+$command = 'Convert ' . $filePath . PHP_EOL;
 
 @socket_write($socket, iconv('GBK', 'UTF-8', $command)) !== false or ErrMsg($socket, '发送转换请求失败');
 
@@ -88,7 +91,7 @@ do {
 	}
 
 	$buffer = trim(@socket_read($socket, 2048));
-	echo $buffer, PHP_EOL;
+	echo $buffer, ' (', $fileName, ')', PHP_EOL;
 } while($buffer === '...' || $buffer === 'WaitConvert');
 
 echo PHP_EOL;
